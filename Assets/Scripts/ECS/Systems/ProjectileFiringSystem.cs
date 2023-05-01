@@ -38,7 +38,7 @@ public partial class ProjectileFiringSystem : SystemBase
 
                         var newPos = transform.Position + shipRotation * 2;
                         ecb.SetComponent(instance, new LocalTransform { Position = newPos, Scale = projectileData.scale, Rotation = transform.Rotation });
-
+                        ecb.SetComponent(instance, new ProjectileTag { playerId = acd.playerId });
 
                         ecb.AddComponent<MoveControllerData>(instance, new MoveControllerData { direction = shipRotation, speed = 5, turnSpeed = 0.0f });
                     }

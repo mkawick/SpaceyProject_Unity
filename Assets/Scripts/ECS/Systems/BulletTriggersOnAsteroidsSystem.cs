@@ -195,33 +195,70 @@ public partial struct ProjectileSystem : ISystem
     }
 }*/
 
+public struct AsteroidHitList : IBufferElementData
+{
+    public LocalTransform position;
+    public int playerProjectileOwnerId;
+    public int hitCount;
+    public int resourceGeneratedTypeId;
+    public Entity asteroidHit;
+    public int processCount;
+}
 
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
 [UpdateAfter(typeof(PhysicsSystemGroup))]
 public partial struct BulletTriggersOnAsteroidsSystem : ISystem
 {
+    NativeList<AsteroidHitList> targetsArray;
     ComponentLookup<ProjectileTag> projectileLookup;
-    //ComponentLookup<LocalTransform> positionLookup;
-  /*  ComponentLookup<Impact> impactLookup;
-    BufferLookup<HitList> hitListLookup;
-    ComponentLookup<Health> healthLookup;*/
+    ComponentLookup<AsteroidTag> asteroidLookup;
+    ComponentLookup<LocalTransform> positionLookup;
+    //BufferLookup<AsteroidHitList> hitListLookup; // we want different lists for asteroids, player combat, and enemy combat
+    /*  ComponentLookup<Impact> impactLookup;
 
-   // [BurstCompile]
+      ComponentLookup<Health> healthLookup;*/
+
+    [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
+        targetsArray = new NativeList<AsteroidHitList>(10000, Allocator.Persistent);
+        //Length(targetsArray);
+        int num = targetsArray.Length;
         
+                                                                            // hitListLookup = SystemAPI.GetBufferLookup<AsteroidHitList>();// needs to be created???
+
         //
     }
-  //  [BurstCompile]
+
+    void OnDestroy()
+    {
+        targetsArray.Dispose();
+    }
+    //  [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
-        //return;
         projectileLookup = SystemAPI.GetComponentLookup<ProjectileTag>(false);// not read only
+        asteroidLookup = SystemAPI.GetComponentLookup<AsteroidTag>(false);
+        positionLookup = SystemAPI.GetComponentLookup<LocalTransform>(true);// read only
+        //return;
+
         //Debug.Log("BulletTriggersOnAsteroidsSystem.Update");
         var ecbBOS = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
         PhysicsWorldSingleton physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
-        
+
         SimulationSingleton simulation = SystemAPI.GetSingleton<SimulationSingleton>();
+
+        state.Dependency.Complete();
+        var job = new ProjectileHitJob
+        {
+            Projectiles = projectileLookup,
+            Asteroids = asteroidLookup,
+            Positions = positionLookup,
+            ECB = ecbBOS,
+            targetsArray = targetsArray
+        };
+        var handle = job.Schedule(SystemAPI.GetSingleton<SimulationSingleton>(), state.Dependency);
+        handle.Complete();
 
         //state.Dependency = new ProjectileHitJob()
         //{
@@ -233,87 +270,154 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
         //    ECB = ecbBOS
         //}.Schedule(simulation);
 
-        state.Dependency = new ProjectileHitJob
-        {
-            Projectiles = projectileLookup,
-            ECB = ecbBOS
-        }.Schedule(simulation, state.Dependency);
+        //positionLookup.Update(ref state);
+        //healthLookup.Update(ref state);
+        //impactLookup.Update(ref state);
+        //hitListLookup.Update(ref state);
+
+        /* state.Dependency = new ProjectileHitJob
+         {
+             Projectiles = projectileLookup,
+             Asteroids = asteroidLookup,
+             Positions = positionLookup,            
+             ECB = ecbBOS,
+             targetsArray = targetsArray,
+           //  HitLists = hitListLookup
+         }.Schedule(simulation, state.Dependency);*/
+        /*    ProjectileHitJob testJob = new ProjectileHitJob
+            {
+                Projectiles = projectileLookup,
+                Asteroids = asteroidLookup,
+                Positions = positionLookup,
+                ECB = ecbBOS,
+                targetsArray = targetsArray,
+            }.Schedule(physicsWorld, PhysicsStep.Default);*/
+
+
+
+        /*simulation.sc
+        ProjectileHitJob testJobHandle = testJob.Schedule();*/
+        // testJob.Complete();
 
         //state.CompleteDependency();
         //ecbBOS.Playback(EntityManager.EntityManagerDebug);
         // projectileLookup.Update(state.base);
         //WorldTransformLookup.Update(ref state);
     }
-   // [BurstCompile]
+
+    // [BurstCompile]
     public struct ProjectileHitJob : ITriggerEventsJob
     {
-       // [ReadOnly] public ComponentLookup<LocalTransform> Positions;
+        [ReadOnly] public ComponentLookup<LocalTransform> Positions;
         public ComponentLookup<ProjectileTag> Projectiles;
+        public ComponentLookup<AsteroidTag> Asteroids;
+        public NativeList<AsteroidHitList> targetsArray;
         //public ComponentLookup<Health> EnemiesHealth;
 
         public EntityCommandBuffer ECB;
-       // public BufferLookup<HitList> HitLists;
+        // public BufferLookup<AsteroidHitList> HitLists;
 
         public void Execute(TriggerEvent triggerEvent)
         {
             //Debug.Log("ProjectileHitJob.Execute");
 
             Entity projectile = Entity.Null;
-            Entity enemy = Entity.Null;
+            Entity asteroid = Entity.Null;
 
             // Identiy which entity is which
             if (Projectiles.HasComponent(triggerEvent.EntityA))
+            {
                 projectile = triggerEvent.EntityA;
+                if (Asteroids.HasComponent(triggerEvent.EntityB))
+                    asteroid = triggerEvent.EntityB;
+            }
             if (Projectiles.HasComponent(triggerEvent.EntityB))
+            {
                 projectile = triggerEvent.EntityB;
+                if (Asteroids.HasComponent(triggerEvent.EntityA))
+                    asteroid = triggerEvent.EntityA;
+            }
 
             if (projectile == null)
             {
-                Debug.Log("null");
+                Debug.Log("projectile null");
                 return;
             }
-            
-            Debug.Log("projectile");
-          /*  if (EnemiesHealth.HasComponent(triggerEvent.EntityA))
-                enemy = triggerEvent.EntityA;
-            if (EnemiesHealth.HasComponent(triggerEvent.EntityB))
-                enemy = triggerEvent.EntityB;*/
-
-           /* // if its a pair of entity we don't want to process, exit
-            if (Entity.Null.Equals(projectile)
-                || Entity.Null.Equals(enemy)) return;
-
-
-            // Check we did not already hit that traget in previous frames
-            var hits = HitLists[projectile];
-            for (int i = 0; i < hits.Length; i++)
+            if (asteroid == null)
             {
-                if (hits[i].Entity.Equals(enemy))
-                    return;
+                Debug.Log("asteroid null");
+                return;
             }
 
-            // Add enemy to list of already hit entities
-            // to avoid hitting it next frame due to the
-            // stateless nature of the Physics
-            hits.Add(new HitList { Entity = enemy });
+            Debug.Log("projectile");
 
-            // Damage enemy
-            Health hp = EnemiesHealth[enemy];
-            hp.Value -= 5;
-            EnemiesHealth[enemy] = hp;
+            Projectiles.TryGetComponent(asteroid, out ProjectileTag projectileTag);
+            Positions.TryGetComponent(asteroid, out LocalTransform projectilePosition);
+            Asteroids.TryGetComponent(asteroid, out AsteroidTag asteroidTag);
 
-            // Destroy enemy if it is out of health
-            if (hp.Value <= 0)
-                ECB.DestroyEntity(enemy);
 
-            // Spawn VFX
-            Entity impactEntity = ECB.Instantiate(Projectiles[projectile].Prefab);
-            ECB.SetComponent(impactEntity,
-                LocalTransform.FromPosition(Positions[enemy].Position));
+            int length = targetsArray.Length;
 
-            // Destroy projectile if it hits all its targets
-            if (Projectiles[projectile].MaxImpactCount <= HitLists[projectile].Length)
-                ECB.DestroyEntity(projectile);*/
+           for (int i = 0; i < length; i++)
+            {
+                var possibleAsteroid = targetsArray[i];
+                if (asteroid == possibleAsteroid.asteroidHit)
+                {
+                    possibleAsteroid.processCount++;
+                    targetsArray[i] = possibleAsteroid;
+                    return;
+                }
+            }
+            targetsArray.Add( new AsteroidHitList
+            {
+                asteroidHit = asteroid,
+                hitCount = 1,
+                playerProjectileOwnerId = projectileTag.playerId,
+                resourceGeneratedTypeId = asteroidTag.resourceType1,
+                position = projectilePosition,
+                processCount = 0
+            });
+
+            /*  if (EnemiesHealth.HasComponent(triggerEvent.EntityA))
+                  enemy = triggerEvent.EntityA;
+              if (EnemiesHealth.HasComponent(triggerEvent.EntityB))
+                  enemy = triggerEvent.EntityB;*/
+
+            /* // if its a pair of entity we don't want to process, exit
+             if (Entity.Null.Equals(projectile)
+                 || Entity.Null.Equals(enemy)) return;
+
+
+             // Check we did not already hit that traget in previous frames
+             var hits = HitLists[projectile];
+             for (int i = 0; i < hits.Length; i++)
+             {
+                 if (hits[i].Entity.Equals(enemy))
+                     return;
+             }
+
+             // Add enemy to list of already hit entities
+             // to avoid hitting it next frame due to the
+             // stateless nature of the Physics
+             hits.Add(new HitList { Entity = enemy });
+
+             // Damage enemy
+             Health hp = EnemiesHealth[enemy];
+             hp.Value -= 5;
+             EnemiesHealth[enemy] = hp;
+
+             // Destroy enemy if it is out of health
+             if (hp.Value <= 0)
+                 ECB.DestroyEntity(enemy);
+
+             // Spawn VFX
+             Entity impactEntity = ECB.Instantiate(Projectiles[projectile].Prefab);
+             ECB.SetComponent(impactEntity,
+                 LocalTransform.FromPosition(Positions[enemy].Position));
+
+             // Destroy projectile if it hits all its targets
+             if (Projectiles[projectile].MaxImpactCount <= HitLists[projectile].Length)
+                 ECB.DestroyEntity(projectile);*/
 
         }
 
