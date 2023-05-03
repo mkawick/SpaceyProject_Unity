@@ -209,7 +209,7 @@ public struct AsteroidHitList : IBufferElementData
 [UpdateAfter(typeof(PhysicsSystemGroup))]
 public partial struct BulletTriggersOnAsteroidsSystem : ISystem
 {
-    NativeList<AsteroidHitList> targetsArray;
+    public NativeList<AsteroidHitList> targetsArray;
     ComponentLookup<ProjectileTag> projectileLookup;
     ComponentLookup<AsteroidTag> asteroidLookup;
     ComponentLookup<LocalTransform> positionLookup;
@@ -245,6 +245,7 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
         //Debug.Log("BulletTriggersOnAsteroidsSystem.Update");
         var ecbBOS = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
         PhysicsWorldSingleton physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
+       // var world = SystemAPI.GetSingleton<World>();
 
         SimulationSingleton simulation = SystemAPI.GetSingleton<SimulationSingleton>();
 
