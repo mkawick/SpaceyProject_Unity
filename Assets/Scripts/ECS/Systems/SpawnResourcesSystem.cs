@@ -6,14 +6,16 @@ using Unity.Transforms;
 using Unity.Burst;
 using Unity.Physics;
 
+//[BurstCompile]
 public partial class SpawnResourcesSystem : SystemBase
 {
     float currentTime = 0;
-   // [BurstCompile]    
+ //   [BurstCompile]    
     protected override void OnCreate()
     {
     }
 
+  //  [BurstCompile]
     protected override void OnUpdate()
     {
         var world = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
@@ -21,22 +23,7 @@ public partial class SpawnResourcesSystem : SystemBase
         var type = systemHandle.GetType();
 
         BulletTriggersOnAsteroidsSystem btoa = World.Unmanaged.GetUnsafeSystemRef<BulletTriggersOnAsteroidsSystem>(systemHandle);
-
-        //BulletTriggersOnAsteroidsSystem btoa = WorldUnmanaged.GetUnsafeSystemRef<BulletTriggersOnAsteroidsSystem>(systemHandle);
-
-
-       // BulletTriggersOnAsteroidsSystem btoa = WorldUnmanaged.ResolveSystem<BulletTriggersOnAsteroidsSystem>(systemHandle);
-
-        //SystemHandle handle = World.DefaultGameObjectInjectionWorld.GetExistingSystem(typeof(ProjectIntoFutureOnCueSystem));
-        //var t = World.DefaultGameObjectInjectionWorld.EntityManager.GetComponentObject<BulletTriggersOnAsteroidsSystem>(systemHandle);
-        //BulletTriggersOnAsteroidsSystem sys = EntityManager.<BulletTriggersOnAsteroidsSystem>(systemHandle);
-
-        //var data = EntityManager.GetComponentData<NativeList<AsteroidHitList>>(SystemHandle);
-        var spawningEvents = btoa.targetsArray;
-
-        //var t = World.GetOrCreateSystemManaged<BulletTriggersOnAsteroidsSystem>();
-        //WorldUnmanaged.GetUnsafeSystemRef<BulletTriggersOnAsteroidsSystem>(systemHandle);
-        //var listOfImpacts = World.DefaultGameObjectInjectionWorld.GetExistingSystem<BulletTriggersOnAsteroidsSystem>(); 
+        var spawningEvents = btoa.resourceGenerationArray;
 
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
 
@@ -48,13 +35,22 @@ public partial class SpawnResourcesSystem : SystemBase
                 {
                     foreach (var val in spawningEvents)
                     {
-                        Debug.Log(val.processCount);
+                        //Debug.Log(val.processCount);
+                        int index = val.resourceGeneratedTypeId;
+                        var resourceEntityToGenerate = resources.resource1;// [resources];
+
+                        var instance = ecb.Instantiate(resourceEntityToGenerate);// potential to change the resource type here
+                        var position = val.position;
+                        ecb.SetComponent(instance, new LocalTransform { Position = position.Position, Scale = 1, Rotation = Quaternion.identity });
+
+                        float3 dir = new float3(0, 0, 1);
+                        ecb.AddComponent<MoveControllerData>(instance, new MoveControllerData { direction = dir, speed = 5, turnSpeed = 0.0f });
                     }
 
                 }).Schedule();
         }
 
-       // Dependency.Complete();
+        Dependency.Complete();
         ecb.Playback(EntityManager);
 
         // You are responsible for disposing of any ECB you create.

@@ -477,7 +477,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   resourcePrefab:
+  - {fileID: 8617242679880617351, guid: 95675fbf086a2434ba622e388dda9bcd, type: 3}
+  - {fileID: 2529370873839276289, guid: 87235a73008cc3a45b1768c694a6634c, type: 3}
   - {fileID: 3039147460785877258, guid: f3ea830571e5b6d43a7bb02dabc88062, type: 3}
+  - {fileID: 7358735095208586498, guid: 8a4cac9734d5afd4691341a57aece046, type: 3}
 --- !u!4 &1027588282
 Transform:
   m_ObjectHideFlags: 0

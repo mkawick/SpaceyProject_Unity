@@ -2,15 +2,15 @@ using UnityEngine;
 using Unity.Mathematics;
 using Unity.Entities;
 
-public class ResourceConfigMono : MonoBehaviour
+public class ResourceEntityConfigMono : MonoBehaviour
 {
     public GameObject [] resourcePrefab;
 }
 
 
-public class ResourceConfigMonoBaker : Baker<ResourceConfigMono>
+public class ResourceEntityConfigMonoBaker : Baker<ResourceEntityConfigMono>
 {
-    public override void Bake(ResourceConfigMono authoring)
+    public override void Bake(ResourceEntityConfigMono authoring)
     {
         var attackControllerEntity = GetEntity(TransformUsageFlags.Dynamic);
         
@@ -21,7 +21,7 @@ public class ResourceConfigMonoBaker : Baker<ResourceConfigMono>
                 var convertedResource = GetEntity(authoring.resourcePrefab[0], TransformUsageFlags.Dynamic);
                 AddComponent(attackControllerEntity, new ResourceSpawnerData
                 {
-                    resource1 = convertedResource
+                    resource1 = convertedResource // DynamicArray???
                 });
             }
         }

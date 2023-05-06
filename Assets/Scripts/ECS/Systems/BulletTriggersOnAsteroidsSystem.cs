@@ -209,7 +209,7 @@ public struct AsteroidHitList : IBufferElementData
 [UpdateAfter(typeof(PhysicsSystemGroup))]
 public partial struct BulletTriggersOnAsteroidsSystem : ISystem
 {
-    public NativeList<AsteroidHitList> targetsArray;
+    public NativeList<AsteroidHitList> resourceGenerationArray;
     ComponentLookup<ProjectileTag> projectileLookup;
     ComponentLookup<AsteroidTag> asteroidLookup;
     ComponentLookup<LocalTransform> positionLookup;
@@ -221,9 +221,9 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
     [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
-        targetsArray = new NativeList<AsteroidHitList>(10000, Allocator.Persistent);
+        resourceGenerationArray = new NativeList<AsteroidHitList>(10000, Allocator.Persistent);
         //Length(targetsArray);
-        int num = targetsArray.Length;
+        int num = resourceGenerationArray.Length;
         
                                                                             // hitListLookup = SystemAPI.GetBufferLookup<AsteroidHitList>();// needs to be created???
 
@@ -232,7 +232,7 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
 
     void OnDestroy()
     {
-        targetsArray.Dispose();
+        resourceGenerationArray.Dispose();
     }
     //  [BurstCompile]
     public void OnUpdate(ref SystemState state)
@@ -240,6 +240,7 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
         projectileLookup = SystemAPI.GetComponentLookup<ProjectileTag>(false);// not read only
         asteroidLookup = SystemAPI.GetComponentLookup<AsteroidTag>(false);
         positionLookup = SystemAPI.GetComponentLookup<LocalTransform>(true);// read only
+        resourceGenerationArray.Clear();
         //return;
 
         //Debug.Log("BulletTriggersOnAsteroidsSystem.Update");
@@ -256,7 +257,7 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
             Asteroids = asteroidLookup,
             Positions = positionLookup,
             ECB = ecbBOS,
-            targetsArray = targetsArray
+            resourceGenerationArray = resourceGenerationArray
         };
         var handle = job.Schedule(SystemAPI.GetSingleton<SimulationSingleton>(), state.Dependency);
         handle.Complete();
@@ -312,7 +313,7 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
         [ReadOnly] public ComponentLookup<LocalTransform> Positions;
         public ComponentLookup<ProjectileTag> Projectiles;
         public ComponentLookup<AsteroidTag> Asteroids;
-        public NativeList<AsteroidHitList> targetsArray;
+        public NativeList<AsteroidHitList> resourceGenerationArray;
         //public ComponentLookup<Health> EnemiesHealth;
 
         public EntityCommandBuffer ECB;
@@ -339,12 +340,12 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
                     asteroid = triggerEvent.EntityA;
             }
 
-            if (projectile == null)
+            if (projectile == Entity.Null)
             {
                 Debug.Log("projectile null");
                 return;
             }
-            if (asteroid == null)
+            if (asteroid == Entity.Null)
             {
                 Debug.Log("asteroid null");
                 return;
@@ -357,19 +358,19 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
             Asteroids.TryGetComponent(asteroid, out AsteroidTag asteroidTag);
 
 
-            int length = targetsArray.Length;
+            int length = resourceGenerationArray.Length;
 
            for (int i = 0; i < length; i++)
             {
-                var possibleAsteroid = targetsArray[i];
+                var possibleAsteroid = resourceGenerationArray[i];
                 if (asteroid == possibleAsteroid.asteroidHit)
                 {
                     possibleAsteroid.processCount++;
-                    targetsArray[i] = possibleAsteroid;
+                    resourceGenerationArray[i] = possibleAsteroid;
                     return;
                 }
             }
-            targetsArray.Add( new AsteroidHitList
+            resourceGenerationArray.Add( new AsteroidHitList
             {
                 asteroidHit = asteroid,
                 hitCount = 1,

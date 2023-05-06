@@ -1,13 +1,6 @@
 using UnityEngine;
 using Unity.Entities;
 
-public enum ResourceType
-{
-    Aluminum, 
-    Copper, 
-    Iron, 
-    Izithrium
-}
 
 public class AsteroidTagMono : MonoBehaviour
 {
