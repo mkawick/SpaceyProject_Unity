@@ -37,14 +37,17 @@ public partial class SpawnResourcesSystem : SystemBase
                     {
                         //Debug.Log(val.processCount);
                         int index = val.resourceGeneratedTypeId;
-                        var resourceEntityToGenerate = resources.resource1;// [resources];
+                        if (val.processCount < 2)
+                        {
+                            var resourceEntityToGenerate = resources.resource1;// [resources];
 
-                        var instance = ecb.Instantiate(resourceEntityToGenerate);// potential to change the resource type here
-                        var position = val.position;
-                        ecb.SetComponent(instance, new LocalTransform { Position = position.Position, Scale = 1, Rotation = Quaternion.identity });
+                            var instance = ecb.Instantiate(resourceEntityToGenerate);// potential to change the resource type here
+                            var position = val.position;
+                            ecb.SetComponent(instance, new LocalTransform { Position = position.Position, Scale = 1, Rotation = Quaternion.identity });
 
-                        float3 dir = new float3(0, 0, 1);
-                        ecb.AddComponent<MoveControllerData>(instance, new MoveControllerData { direction = dir, speed = 5, turnSpeed = 0.0f });
+                            float3 dir = new float3(0, 0, 1);
+                            ecb.AddComponent<MoveControllerData>(instance, new MoveControllerData { direction = dir, speed = 5, turnSpeed = 0.0f });
+                        }
                     }
 
                 }).Schedule();
