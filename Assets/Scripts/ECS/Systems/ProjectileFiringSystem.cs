@@ -34,7 +34,7 @@ public partial class ProjectileFiringSystem : SystemBase
 
                         //float scale = 0.2;//TODO, convert to a transform pass thru at baking time
 
-                        float3 shipRotation = -transform.Right();    // no sure why but the ship is pointing the wrong way... should be transform.Forward();
+                        float3 shipRotation = transform.Forward();    // no sure why but the ship is pointing the wrong way... should be transform.Forward();
 
                         var newPos = transform.Position + shipRotation * 2;
                         ecb.SetComponent(instance, new LocalTransform { Position = newPos, Scale = projectileData.scale, Rotation = transform.Rotation });
