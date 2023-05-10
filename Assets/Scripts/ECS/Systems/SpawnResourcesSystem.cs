@@ -28,29 +28,37 @@ public partial class SpawnResourcesSystem : SystemBase
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
 
         int len = spawningEvents.Length;
+
+        var em = EntityManager;
         if (len > 0)
         {
+            var entityManger = World.DefaultGameObjectInjectionWorld.EntityManager;
+            var bufferFromEntity = GetBufferLookup<EntityElement>();
+            // GetBufferFromEntity<EntityElement>();
             Entities
-                .ForEach((ref ResourceSpawnerData resources) =>
-                {
-                    foreach (var val in spawningEvents)
-                    {
-                        //Debug.Log(val.processCount);
-                        int index = val.resourceGeneratedTypeId;
-                        if (val.processCount < 2)
-                        {
-                            var resourceEntityToGenerate = resources.resource1;// [resources];
+               .WithAll<ResourceSpawnerData>()
+               .ForEach((Entity entity) =>
+               {
+                   if (entityManger.HasBuffer<EntityElement>(entity) == false)
+                       return;
 
-                            var instance = ecb.Instantiate(resourceEntityToGenerate);// potential to change the resource type here
-                            var position = val.position;
-                            ecb.SetComponent(instance, new LocalTransform { Position = position.Position, Scale = 1, Rotation = Quaternion.identity });
+                   var bufferFromEntity = entityManger.GetBuffer<EntityElement>(entity, true);
+                   //var readonlyBuffer = SystemAPI.GetBufferLookup<EntityElement>(true)[entity];
 
-                            float3 dir = new float3(0, 0, 1);
-                            ecb.AddComponent<MoveControllerData>(instance, new MoveControllerData { direction = dir, speed = 5, turnSpeed = 0.0f });
-                        }
-                    }
+                   foreach (var val in spawningEvents)
+                   {
+                       int index = val.resourceGeneratedTypeId;
+                       if (val.processCount < 2)// make sure that we only generate 1 resource per hit
+                       {
+                           var instance = ecb.Instantiate(bufferFromEntity[index].resource);// potential to change the resource type here
+                           var position = val.position;
+                           ecb.SetComponent(instance, new LocalTransform { Position = position.Position, Scale = 1, Rotation = Quaternion.identity });
 
-                }).Schedule();
+                           float3 dir = new float3(0, 0, 1);
+                           ecb.AddComponent<MoveControllerData>(instance, new MoveControllerData { direction = dir, speed = 5, turnSpeed = 0.0f });
+                       }
+                   }
+               }).Run();
         }
 
         Dependency.Complete();
