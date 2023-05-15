@@ -215,6 +215,8 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
     ComponentLookup<ProjectileTag> projectileLookup;
     ComponentLookup<AsteroidTag> asteroidLookup;
     ComponentLookup<LocalTransform> positionLookup;
+    ComponentLookup<CollectorTag> collectorLookup;
+    ComponentLookup<ResourceData> resourceLookup;
     //BufferLookup<AsteroidHitList> hitListLookup; // we want different lists for asteroids, player combat, and enemy combat
     /*  ComponentLookup<Impact> impactLookup;
 
@@ -251,6 +253,9 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
         asteroidLookup = SystemAPI.GetComponentLookup<AsteroidTag>(false);
         positionLookup = SystemAPI.GetComponentLookup<LocalTransform>(true);// read only
 
+        collectorLookup = SystemAPI.GetComponentLookup<CollectorTag>(true);
+        resourceLookup = SystemAPI.GetComponentLookup<ResourceData>(true);
+
         float currentTime = SystemAPI.Time.fixedDeltaTime;
         CleanupHistory(currentTime);
         //resourceGenerationArray.Clear();
@@ -267,6 +272,8 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
             Projectiles = projectileLookup,
             Asteroids = asteroidLookup,
             Positions = positionLookup,
+            Resources = resourceLookup,
+            Collector = collectorLookup,
             ECB = ecbBOS,
             resourceGenerationArray = resourceGenerationArray,
             currentTime = currentTime
@@ -282,6 +289,8 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
         [ReadOnly] public ComponentLookup<LocalTransform> Positions;
         public ComponentLookup<ProjectileTag> Projectiles;
         public ComponentLookup<AsteroidTag> Asteroids;
+        [ReadOnly] public ComponentLookup<ResourceData> Resources;
+        [ReadOnly] public ComponentLookup<CollectorTag> Collector;
         public NativeList<AsteroidHitList> resourceGenerationArray;
         public float currentTime;
 
@@ -289,12 +298,52 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
 
         public void Execute(TriggerEvent triggerEvent)
         {
-            //Debug.Log("ProjectileHitJob.Execute");
+            if (CollectorAndResourceTrigger(triggerEvent))
+                return;
 
+            if (AsteroidAndProjectileTrigger(triggerEvent))
+                return;
+        }
+
+        public bool CollectorAndResourceTrigger(TriggerEvent triggerEvent)
+        {
+            Entity resource = Entity.Null;
+            Entity collector = Entity.Null;
+
+            if (Collector.HasComponent(triggerEvent.EntityA))
+            {
+                collector = triggerEvent.EntityA;
+                if (Resources.HasComponent(triggerEvent.EntityB))
+                    resource = triggerEvent.EntityB;
+            }
+            if (Collector.HasComponent(triggerEvent.EntityB))
+            {
+                collector = triggerEvent.EntityB;
+                if (Resources.HasComponent(triggerEvent.EntityA))
+                    resource = triggerEvent.EntityA;
+            }
+
+            if (collector == Entity.Null)
+            {
+                Debug.Log("collector null");
+                return false;
+            }
+            if (resource == Entity.Null)
+            {
+                Debug.Log("resource null");
+                return false;
+            }
+
+            Debug.Log("* collect *");
+
+            return true;
+        }
+
+        bool AsteroidAndProjectileTrigger(TriggerEvent triggerEvent)
+        {
             Entity projectile = Entity.Null;
             Entity asteroid = Entity.Null;
 
-            // Identiy which entity is which
             if (Projectiles.HasComponent(triggerEvent.EntityA))
             {
                 projectile = triggerEvent.EntityA;
@@ -310,16 +359,14 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
 
             if (projectile == Entity.Null)
             {
-                Debug.Log("projectile null");
-                return;
+                return false;
             }
             if (asteroid == Entity.Null)
             {
-                Debug.Log("asteroid null");
-                return;
+                return false;
             }
 
-            Debug.Log("projectile");
+            Debug.Log("mining");
 
             Projectiles.TryGetComponent(asteroid, out ProjectileTag projectileTag);
             Positions.TryGetComponent(asteroid, out LocalTransform projectilePosition);
@@ -328,17 +375,17 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
 
             int length = resourceGenerationArray.Length;
 
-           for (int i = 0; i < length; i++)
+            for (int i = 0; i < length; i++)
             {
                 var resourceGen = resourceGenerationArray[i];
                 if (projectile == resourceGen.projectileFired)
                 {
                     resourceGen.processCount++;
                     resourceGenerationArray[i] = resourceGen;// assign back
-                    return;
+                    return true;
                 }
             }
-            resourceGenerationArray.Add( new AsteroidHitList
+            resourceGenerationArray.Add(new AsteroidHitList
             {
                 asteroidHit = asteroid,
                 projectileFired = projectile,
@@ -349,102 +396,10 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
                 processCount = 0,
                 currentTime = currentTime
             });
-
-            /*  if (EnemiesHealth.HasComponent(triggerEvent.EntityA))
-                  enemy = triggerEvent.EntityA;
-              if (EnemiesHealth.HasComponent(triggerEvent.EntityB))
-                  enemy = triggerEvent.EntityB;*/
-
-            /* // if its a pair of entity we don't want to process, exit
-             if (Entity.Null.Equals(projectile)
-                 || Entity.Null.Equals(enemy)) return;
-
-
-             // Check we did not already hit that traget in previous frames
-             var hits = HitLists[projectile];
-             for (int i = 0; i < hits.Length; i++)
-             {
-                 if (hits[i].Entity.Equals(enemy))
-                     return;
-             }
-
-             // Add enemy to list of already hit entities
-             // to avoid hitting it next frame due to the
-             // stateless nature of the Physics
-             hits.Add(new HitList { Entity = enemy });
-
-             // Damage enemy
-             Health hp = EnemiesHealth[enemy];
-             hp.Value -= 5;
-             EnemiesHealth[enemy] = hp;
-
-             // Destroy enemy if it is out of health
-             if (hp.Value <= 0)
-                 ECB.DestroyEntity(enemy);
-
-             // Spawn VFX
-             Entity impactEntity = ECB.Instantiate(Projectiles[projectile].Prefab);
-             ECB.SetComponent(impactEntity,
-                 LocalTransform.FromPosition(Positions[enemy].Position));
-
-             // Destroy projectile if it hits all its targets
-             if (Projectiles[projectile].MaxImpactCount <= HitLists[projectile].Length)
-                 ECB.DestroyEntity(projectile);*/
-
+            return true;
         }
 
     }
 }
 
 
-/*
-public partial class TriggerSystem : SystemBase
-{
-   private EndSimulationEntityCommandBufferSystem endECBSystem;
-   private StepPhysicsWorld stepPhysicsWorld;
-
-   protected override void OnCreate()
-   {
-       endECBSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-       stepPhysicsWorld = World.GetOrCreateSystem<StepPhysicsWorld>();
-   }
-
-   protected override void OnUpdate()
-   {
-       var triggerJob = new TriggerJob
-       {
-           allPickups = GetComponentDataFromEntity<PickupTag>(true),
-           allPlayers = GetComponentDataFromEntity<PlayerTag>(),
-           ecb = endECBSystem.CreateCommandBuffer()
-       };
-
-       Dependency = triggerJob.Schedule(stepPhysicsWorld.Simulation, Dependency);
-       endECBSystem.AddJobHandleForProducer(Dependency);
-   }
-}
-
-
-[BurstCompile]
-struct TriggerJob : ITriggerEventsJob
-{
-   [ReadOnly] public ComponentLookup<PickupTag> allPickups;
-   public ComponentLookup<PlayerTag> allPlayers;
-   public EntityCommandBuffer ecb;
-
-   public void Execute(TriggerEvent triggerEvent)
-   {
-       Entity entityA = triggerEvent.EntityA;
-       Entity entityB = triggerEvent.EntityB;
-
-       if (allPickups.HasComponent(entityA) && allPickups.HasComponent(entityB)) return;
-
-       if (allPickups.HasComponent(entityA) && allPlayers.HasComponent(entityB))
-       {
-           ecb.DestroyEntity(entityA);
-       }
-       else if (allPickups.HasComponent(entityB) && allPlayers.HasComponent(entityA))
-       {
-           ecb.DestroyEntity(entityB);
-       }
-   }
-}*/

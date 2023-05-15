@@ -55,7 +55,7 @@ public partial class SpawnResourcesSystem : SystemBase
                            ecb.SetComponent(instance, new LocalTransform { Position = position.Position, Scale = 1, Rotation = Quaternion.identity });
 
                            float3 dir = new float3(0, 0, 1);
-                           ecb.AddComponent<MoveControllerData>(instance, new MoveControllerData { direction = dir, speed = 5, turnSpeed = 0.0f });
+                           ecb.AddComponent<MoveControllerData>(instance, new MoveControllerData { direction = -dir, speed = 5, turnSpeed = 0.0f });
                        }
                    }
                }).Run();

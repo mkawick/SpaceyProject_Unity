@@ -1,5 +1,5 @@
 using Unity.Entities;
 
-public class TargetTag : IComponentData
+public struct TargetTag : IComponentData
 {
 }
