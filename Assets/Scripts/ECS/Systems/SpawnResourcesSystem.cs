@@ -34,7 +34,7 @@ public partial class SpawnResourcesSystem : SystemBase
         {
             var entityManger = World.DefaultGameObjectInjectionWorld.EntityManager;
             var bufferFromEntity = GetBufferLookup<EntityElement>();
-            // GetBufferFromEntity<EntityElement>();
+
             Entities
                .WithAll<ResourceSpawnerData>()
                .ForEach((Entity entity) =>
@@ -43,10 +43,10 @@ public partial class SpawnResourcesSystem : SystemBase
                        return;
 
                    var bufferFromEntity = entityManger.GetBuffer<EntityElement>(entity, true);
-                   //var readonlyBuffer = SystemAPI.GetBufferLookup<EntityElement>(true)[entity];
 
-                   foreach (var val in spawningEvents)
+                   for (int i=0; i<spawningEvents.Length; i++)
                    {
+                       var val = spawningEvents[i];
                        int index = val.resourceGeneratedTypeId;
                        if (val.processCount < 2)// make sure that we only generate 1 resource per hit
                        {
@@ -56,6 +56,8 @@ public partial class SpawnResourcesSystem : SystemBase
 
                            float3 dir = new float3(0, 0, 1);
                            ecb.AddComponent<MoveControllerData>(instance, new MoveControllerData { direction = -dir, speed = 5, turnSpeed = 0.0f });
+                           val.wasProcessed = true;
+                           spawningEvents[i] = val;// push back
                        }
                    }
                }).Run();

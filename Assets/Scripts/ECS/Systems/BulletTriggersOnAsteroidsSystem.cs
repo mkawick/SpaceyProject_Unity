@@ -205,6 +205,18 @@ public struct AsteroidHitList : IBufferElementData
     public Entity projectileFired;
     public int processCount;
     public float currentTime;
+    public bool wasProcessed;
+}
+
+public struct ResourceGathered : IBufferElementData
+{
+    public Entity resourceEntity;    
+    public ResourceType type;
+    public int playerId;
+    public float quantity;
+    public int processCount;
+    public float currentTime;
+    public bool wasProcessed;
 }
 
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
@@ -212,10 +224,11 @@ public struct AsteroidHitList : IBufferElementData
 public partial struct BulletTriggersOnAsteroidsSystem : ISystem
 {
     public NativeList<AsteroidHitList> resourceGenerationArray;
+    public NativeList<ResourceGathered> resourceGatheredArray;
     ComponentLookup<ProjectileTag> projectileLookup;
     ComponentLookup<AsteroidTag> asteroidLookup;
     ComponentLookup<LocalTransform> positionLookup;
-    ComponentLookup<CollectorTag> collectorLookup;
+    ComponentLookup<PlayerTag> collectorLookup;
     ComponentLookup<ResourceData> resourceLookup;
     //BufferLookup<AsteroidHitList> hitListLookup; // we want different lists for asteroids, player combat, and enemy combat
     /*  ComponentLookup<Impact> impactLookup;
@@ -226,6 +239,7 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
         resourceGenerationArray = new NativeList<AsteroidHitList>(10000, Allocator.Persistent);
+        resourceGatheredArray = new NativeList<ResourceGathered>(10000, Allocator.Persistent);
         int num = resourceGenerationArray.Length;
     }
 
@@ -233,19 +247,31 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
     {
         resourceGenerationArray.Dispose();
     }
-    bool CleanupHistory(float currentTime)
+    bool CleanupHistory(float currentTime, EntityCommandBuffer ecb)
     {
         for (int i = resourceGenerationArray.Length - 1; i >= 0; i--)
         {
             var item = resourceGenerationArray[i];
-            if (currentTime > item.currentTime + 0.2f) // 1/5th of a second
+            if (item.wasProcessed == true || currentTime > item.currentTime + 0.2f) // 1/5th of a second
             {
+                ecb.DestroyEntity(item.projectileFired);
                 resourceGenerationArray.RemoveAt(i);
+            }
+        }
+
+        for (int i = resourceGatheredArray.Length - 1; i >= 0; i--)
+        {
+            var item = resourceGatheredArray[i];
+            if (item.wasProcessed == true || currentTime > item.currentTime + 0.2f) // 1/5th of a second
+            {
+                ecb.DestroyEntity(item.resourceEntity);
+                resourceGatheredArray.RemoveAt(i);
             }
         }
 
         return true;
     }
+
     //  [BurstCompile]
     public void OnUpdate(ref SystemState state)
     {
@@ -253,48 +279,49 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
         asteroidLookup = SystemAPI.GetComponentLookup<AsteroidTag>(false);
         positionLookup = SystemAPI.GetComponentLookup<LocalTransform>(true);// read only
 
-        collectorLookup = SystemAPI.GetComponentLookup<CollectorTag>(true);
+        collectorLookup = SystemAPI.GetComponentLookup<PlayerTag>(true);
         resourceLookup = SystemAPI.GetComponentLookup<ResourceData>(true);
 
         float currentTime = SystemAPI.Time.fixedDeltaTime;
-        CleanupHistory(currentTime);
-        //resourceGenerationArray.Clear();
-        
-
         var ecbBOS = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
-        PhysicsWorldSingleton physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
+        CleanupHistory(currentTime, ecbBOS);
 
+        PhysicsWorldSingleton physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
         SimulationSingleton simulation = SystemAPI.GetSingleton<SimulationSingleton>();
 
         state.Dependency.Complete();
         var job = new ProjectileHitJob
         {
+            ECB = ecbBOS,
             Projectiles = projectileLookup,
             Asteroids = asteroidLookup,
             Positions = positionLookup,
             Resources = resourceLookup,
             Collector = collectorLookup,
-            ECB = ecbBOS,
             resourceGenerationArray = resourceGenerationArray,
+            resourceGatheredArray = resourceGatheredArray,
             currentTime = currentTime
         };
         var handle = job.Schedule(SystemAPI.GetSingleton<SimulationSingleton>(), state.Dependency);
         handle.Complete();
 
+        //ecbBOS.Playback(EntityManager);
+        //ecbBOS.Dispose();
     }
 
     // [BurstCompile]
     public struct ProjectileHitJob : ITriggerEventsJob
     {
+        public EntityCommandBuffer ECB;
         [ReadOnly] public ComponentLookup<LocalTransform> Positions;
         public ComponentLookup<ProjectileTag> Projectiles;
         public ComponentLookup<AsteroidTag> Asteroids;
         [ReadOnly] public ComponentLookup<ResourceData> Resources;
-        [ReadOnly] public ComponentLookup<CollectorTag> Collector;
+        [ReadOnly] public ComponentLookup<PlayerTag> Collector;
         public NativeList<AsteroidHitList> resourceGenerationArray;
+        public NativeList<ResourceGathered> resourceGatheredArray;
         public float currentTime;
-
-        public EntityCommandBuffer ECB;
+        
 
         public void Execute(TriggerEvent triggerEvent)
         {
@@ -335,6 +362,17 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
             }
 
             Debug.Log("* collect *");
+            Resources.TryGetComponent(resource, out ResourceData resourceData);
+            Collector.TryGetComponent(collector, out PlayerTag playerTag);
+            resourceGatheredArray.Add(new ResourceGathered
+            {
+                resourceEntity = resource, 
+                type = resourceData.type,
+                playerId = playerTag.id,
+                quantity = resourceData.quantity,
+                processCount = 0,
+                currentTime = currentTime
+            });
 
             return true;
         }
@@ -372,9 +410,7 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
             Positions.TryGetComponent(asteroid, out LocalTransform projectilePosition);
             Asteroids.TryGetComponent(asteroid, out AsteroidTag asteroidTag);
 
-
             int length = resourceGenerationArray.Length;
-
             for (int i = 0; i < length; i++)
             {
                 var resourceGen = resourceGenerationArray[i];

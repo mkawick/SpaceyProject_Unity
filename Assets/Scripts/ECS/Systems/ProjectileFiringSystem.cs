@@ -21,7 +21,7 @@ public partial class ProjectileFiringSystem : SystemBase
         // The ECB is captured by the ForEach job.
         // Until completed, the job owns the ECB's job safety handle.
         Entities
-            .ForEach((ref ProjectileFiringData projectileData, in AttackControllerData acd, in Entity e,  in LocalTransform transform) =>
+            .ForEach((ref ProjectileFiringData projectileData, in AttackControllerData acd, in PlayerTag player, in Entity e,  in LocalTransform transform) =>
             {
                 if (projectileData.projectile == null)
                     return;
@@ -38,7 +38,7 @@ public partial class ProjectileFiringSystem : SystemBase
 
                         var newPos = transform.Position + shipRotation * 2;
                         ecb.SetComponent(instance, new LocalTransform { Position = newPos, Scale = projectileData.scale, Rotation = transform.Rotation });
-                        ecb.SetComponent(instance, new ProjectileTag { playerId = acd.playerId });
+                        ecb.SetComponent(instance, new ProjectileTag { playerId = player.id });
 
                         ecb.AddComponent<MoveControllerData>(instance, new MoveControllerData { direction = shipRotation, speed = 5, turnSpeed = 0.0f });
                     }

@@ -23,7 +23,7 @@ public class PlayerStats : MonoBehaviour
         
     }
 
-    public void AddResource(ResourceType type, float quantity)
+    public void AddResource(ResourceType type, float quantity, int playerId)
     {
         int index = (int)type;
         resources[index] += quantity;
