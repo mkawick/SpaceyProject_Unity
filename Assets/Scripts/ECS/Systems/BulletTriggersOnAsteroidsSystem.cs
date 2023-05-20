@@ -254,6 +254,7 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
             var item = resourceGenerationArray[i];
             if (item.wasProcessed == true || currentTime > item.currentTime + 0.2f) // 1/5th of a second
             {
+                Debug.Log("destroy: " + item);
                 ecb.DestroyEntity(item.projectileFired);
                 resourceGenerationArray.RemoveAt(i);
             }
@@ -364,15 +365,17 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
             Debug.Log("* collect *");
             Resources.TryGetComponent(resource, out ResourceData resourceData);
             Collector.TryGetComponent(collector, out PlayerTag playerTag);
-            resourceGatheredArray.Add(new ResourceGathered
+            var val = new ResourceGathered
             {
-                resourceEntity = resource, 
+                resourceEntity = resource,
                 type = resourceData.type,
                 playerId = playerTag.id,
                 quantity = resourceData.quantity,
                 processCount = 0,
                 currentTime = currentTime
-            });
+            };
+            resourceGatheredArray.Add(val);
+            Debug.Log("collect: " + val);
 
             return true;
         }

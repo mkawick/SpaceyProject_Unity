@@ -48,8 +48,9 @@ public partial class SpawnResourcesSystem : SystemBase
                    {
                        var val = spawningEvents[i];
                        int index = val.resourceGeneratedTypeId;
-                       if (val.processCount < 2)// make sure that we only generate 1 resource per hit
+                       if (val.wasProcessed == false && val.processCount < 2)// make sure that we only generate 1 resource per hit
                        {
+                           Debug.Log("spawning: " + val);
                            var instance = ecb.Instantiate(bufferFromEntity[index].resource);// potential to change the resource type here
                            var position = val.position;
                            ecb.SetComponent(instance, new LocalTransform { Position = position.Position, Scale = 1, Rotation = Quaternion.identity });
