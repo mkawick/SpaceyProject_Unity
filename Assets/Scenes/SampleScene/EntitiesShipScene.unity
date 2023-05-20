@@ -1202,57 +1202,6 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 1432912475732459398}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1255831396
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1255831390}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ccea9ea98e38942e0b0938c27ed1903e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_MotionType: 1
-  m_Smoothing: 0
-  m_Mass: 1
-  m_LinearDamping: 0.01
-  m_AngularDamping: 0.05
-  m_InitialLinearVelocity:
-    x: 0
-    y: 0
-    z: 0
-  m_InitialAngularVelocity:
-    x: 0
-    y: 0
-    z: 0
-  m_GravityFactor: 1
-  m_OverrideDefaultMassDistribution: 0
-  m_CenterOfMass:
-    x: 0
-    y: 0
-    z: 0
-  m_Orientation:
-    Value:
-      x: 0
-      y: 0
-      z: 0
-    RotationOrder: 4
-  m_InertiaTensor:
-    x: 0.4
-    y: 0.4
-    z: 0.4
-  m_WorldIndex: 0
-  m_CustomTags:
-    Tag00: 0
-    Tag01: 0
-    Tag02: 0
-    Tag03: 0
-    Tag04: 0
-    Tag05: 0
-    Tag06: 0
-    Tag07: 0
 --- !u!1 &1305471518
 GameObject:
   m_ObjectHideFlags: 0
@@ -1897,11 +1846,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 8297067722156429756, guid: 7ab8029266f19f2448855d2d55a80f47,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1255831396}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7ab8029266f19f2448855d2d55a80f47, type: 3}
 --- !u!1001 &3213464282482865390
 PrefabInstance:
@@ -1920,7 +1865,8 @@ PrefabInstance:
         type: 3}
       propertyPath: projectile
       value: 
-      objectReference: {fileID: 1255831390}
+      objectReference: {fileID: 8297067722156429756, guid: 7ab8029266f19f2448855d2d55a80f47,
+        type: 3}
     - target: {fileID: 3860123570397308344, guid: 3d7c164b10034514b9bdf09113497331,
         type: 3}
       propertyPath: m_RootOrder
