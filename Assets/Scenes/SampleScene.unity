@@ -624,6 +624,7 @@ MonoBehaviour:
   m_Dithering: 0
   m_ClearDepth: 1
   m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
   m_UseScreenCoordOverride: 0
   m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
   m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
@@ -1741,7 +1742,7 @@ PrefabInstance:
     - target: {fileID: 743570610533278816, guid: 11ab6f174d896411ca137175948f4689,
         type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 743570610533278816, guid: 11ab6f174d896411ca137175948f4689,
         type: 3}
@@ -1751,7 +1752,7 @@ PrefabInstance:
     - target: {fileID: 743570610533278816, guid: 11ab6f174d896411ca137175948f4689,
         type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 743570610533278816, guid: 11ab6f174d896411ca137175948f4689,
         type: 3}
@@ -1761,7 +1762,7 @@ PrefabInstance:
     - target: {fileID: 743570610533278816, guid: 11ab6f174d896411ca137175948f4689,
         type: 3}
       propertyPath: m_SizeDelta.y
-      value: 171.1
+      value: 171.09998
       objectReference: {fileID: 0}
     - target: {fileID: 743570610533278816, guid: 11ab6f174d896411ca137175948f4689,
         type: 3}
@@ -1806,7 +1807,7 @@ PrefabInstance:
     - target: {fileID: 743570610533278816, guid: 11ab6f174d896411ca137175948f4689,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 448.9
+      value: -96.100006
       objectReference: {fileID: 0}
     - target: {fileID: 743570610533278816, guid: 11ab6f174d896411ca137175948f4689,
         type: 3}
@@ -2069,6 +2070,7 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0

@@ -23,13 +23,12 @@ public partial class SpawnResourcesSystem : SystemBase
         var type = systemHandle.GetType();
 
         BulletTriggersOnAsteroidsSystem btoa = World.Unmanaged.GetUnsafeSystemRef<BulletTriggersOnAsteroidsSystem>(systemHandle);
-        var spawningEvents = btoa.resourceGenerationArray;
-
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
 
+        var spawningEvents = btoa.resourceGenerationArray;
         int len = spawningEvents.Length;
 
-        var em = EntityManager;
+        //var em = EntityManager;
         if (len > 0)
         {
             var entityManger = World.DefaultGameObjectInjectionWorld.EntityManager;
@@ -50,13 +49,13 @@ public partial class SpawnResourcesSystem : SystemBase
                        int index = val.resourceGeneratedTypeId;
                        if (val.wasProcessed == false && val.processCount < 2)// make sure that we only generate 1 resource per hit
                        {
-                           Debug.Log("spawning: " + val);
+                           //Debug.Log("spawning: " + val);
                            var instance = ecb.Instantiate(bufferFromEntity[index].resource);// potential to change the resource type here
                            var position = val.position;
                            ecb.SetComponent(instance, new LocalTransform { Position = position.Position, Scale = 1, Rotation = Quaternion.identity });
 
                            float3 dir = new float3(0, 0, 1);
-                           ecb.AddComponent<MoveControllerData>(instance, new MoveControllerData { direction = -dir, speed = 5, turnSpeed = 0.0f });
+                           ecb.AddComponent<MoveControllerData>(instance, new MoveControllerData { direction = -dir, speed = 5, turnSpeed = 0.0f, accelerationSpeed = -1 });
                            val.wasProcessed = true;
                            spawningEvents[i] = val;// push back
                        }
@@ -66,8 +65,6 @@ public partial class SpawnResourcesSystem : SystemBase
 
         Dependency.Complete();
         ecb.Playback(EntityManager);
-
-        // You are responsible for disposing of any ECB you create.
         ecb.Dispose();
     }
 }
