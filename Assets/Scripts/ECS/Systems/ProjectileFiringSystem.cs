@@ -14,12 +14,8 @@ public partial class ProjectileFiringSystem : SystemBase
     protected override void OnUpdate()
     {
         float deltaTime = SystemAPI.Time.DeltaTime;
-        // You don't specify a size because the buffer will grow as needed.
         EntityCommandBuffer ecb = new EntityCommandBuffer(Allocator.TempJob);
 
-
-        // The ECB is captured by the ForEach job.
-        // Until completed, the job owns the ECB's job safety handle.
         Entities
             .ForEach((ref ProjectileFiringData projectileData, in AttackControllerData acd, in PlayerTag player, in Entity e,  in LocalTransform transform) =>
             {
@@ -47,12 +43,7 @@ public partial class ProjectileFiringSystem : SystemBase
             }).Schedule();
 
         Dependency.Complete();
-
-        // Now that the job is completed, you can enact the changes.
-        // Note that Playback can only be called on the main thread.
         ecb.Playback(EntityManager);
-
-        // You are responsible for disposing of any ECB you create.
         ecb.Dispose();
     }
     

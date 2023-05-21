@@ -35,7 +35,7 @@ public partial class ResourceGatheringSystem : SystemBase
                  for (int i = 0; i < resourceCollectEvents.Length; i++)
                  {
                      var collect = resourceCollectEvents[i];
-                     if (collect.playerId == player.id)
+                     if (collect.objectWasDestroyed == false && collect.playerId == player.id)
                      {
                          collect.wasProcessed = true;
                          resourceCollectEvents[i] = collect;

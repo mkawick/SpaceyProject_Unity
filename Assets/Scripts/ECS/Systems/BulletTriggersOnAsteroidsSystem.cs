@@ -206,6 +206,7 @@ public struct AsteroidHitList : IBufferElementData
     public int processCount;
     public float currentTime;
     public bool wasProcessed;
+    public bool objectWasDestroyed;
 }
 
 public struct ResourceGathered : IBufferElementData
@@ -217,6 +218,7 @@ public struct ResourceGathered : IBufferElementData
     public int processCount;
     public float currentTime;
     public bool wasProcessed;
+    public bool objectWasDestroyed;
 }
 
 [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
@@ -252,10 +254,9 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
         for (int i = resourceGenerationArray.Length - 1; i >= 0; i--)
         {
             var item = resourceGenerationArray[i];
-            if (item.wasProcessed == true || currentTime > item.currentTime + 0.2f) // 1/5th of a second
+            if (item.objectWasDestroyed && currentTime > item.currentTime + 0.2f) // 1/5th of a second
             {
-                Debug.Log("destroy: " + item);
-                ecb.DestroyEntity(item.projectileFired);
+                //Debug.Log("remove projectile: " + item);
                 resourceGenerationArray.RemoveAt(i);
             }
         }
@@ -263,13 +264,40 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
         for (int i = resourceGatheredArray.Length - 1; i >= 0; i--)
         {
             var item = resourceGatheredArray[i];
-            if (item.wasProcessed == true || currentTime > item.currentTime + 0.2f) // 1/5th of a second
+            if (item.objectWasDestroyed && currentTime > item.currentTime + 0.2f) // 1/5th of a second
             {
-                ecb.DestroyEntity(item.resourceEntity);
+                //Debug.Log("remove resource: " + item);
                 resourceGatheredArray.RemoveAt(i);
             }
         }
 
+        return true;
+    }
+
+    bool DestroyOldObjects(EntityCommandBuffer ecb)
+    {
+        for (int i = resourceGenerationArray.Length - 1; i >= 0; i--)
+        {
+            var item = resourceGenerationArray[i];
+            if (item.wasProcessed == true && item.objectWasDestroyed == false) 
+            {
+                //Debug.Log("destroy projectile: " + item);
+                item.objectWasDestroyed = true;
+                ecb.DestroyEntity(item.projectileFired);
+                resourceGenerationArray[i] = item;
+            }
+        }
+        for (int i = resourceGatheredArray.Length - 1; i >= 0; i--)
+        {
+            var item = resourceGatheredArray[i];
+            if (item.wasProcessed == true && item.objectWasDestroyed == false)
+            {
+                //Debug.Log("destroy resource: " + item);
+                item.objectWasDestroyed = true;
+                ecb.DestroyEntity(item.resourceEntity);
+                resourceGatheredArray[i] = item;
+            }
+        }
         return true;
     }
 
@@ -283,7 +311,7 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
         collectorLookup = SystemAPI.GetComponentLookup<PlayerTag>(true);
         resourceLookup = SystemAPI.GetComponentLookup<ResourceData>(true);
 
-        float currentTime = SystemAPI.Time.fixedDeltaTime;
+        float currentTime = (float)SystemAPI.Time.ElapsedTime;
         var ecbBOS = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
         CleanupHistory(currentTime, ecbBOS);
 
@@ -308,6 +336,7 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
 
         //ecbBOS.Playback(EntityManager);
         //ecbBOS.Dispose();
+        DestroyOldObjects(ecbBOS);
     }
 
     // [BurstCompile]
@@ -353,17 +382,27 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
 
             if (collector == Entity.Null)
             {
-                Debug.Log("collector null");
                 return false;
             }
             if (resource == Entity.Null)
             {
-                Debug.Log("resource null");
                 return false;
             }
 
-            Debug.Log("* collect *");
             Resources.TryGetComponent(resource, out ResourceData resourceData);
+            int length = resourceGatheredArray.Length;
+            for (int i = 0; i < length; i++)
+            {
+                var resourceGathered = resourceGatheredArray[i];
+                if (resource == resourceGathered.resourceEntity)
+                {
+                    resourceGathered.processCount++;
+                    resourceGatheredArray[i] = resourceGathered;// assign back
+                    return true;
+                }
+            }
+            //Debug.Log("* collect resource*");
+            
             Collector.TryGetComponent(collector, out PlayerTag playerTag);
             var val = new ResourceGathered
             {
@@ -375,7 +414,6 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
                 currentTime = currentTime
             };
             resourceGatheredArray.Add(val);
-            Debug.Log("collect: " + val);
 
             return true;
         }
@@ -407,7 +445,7 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
                 return false;
             }
 
-            Debug.Log("mining");
+            
 
             Projectiles.TryGetComponent(asteroid, out ProjectileTag projectileTag);
             Positions.TryGetComponent(asteroid, out LocalTransform projectilePosition);
@@ -424,6 +462,8 @@ public partial struct BulletTriggersOnAsteroidsSystem : ISystem
                     return true;
                 }
             }
+
+            //Debug.Log("mining with projectile");
             resourceGenerationArray.Add(new AsteroidHitList
             {
                 asteroidHit = asteroid,
