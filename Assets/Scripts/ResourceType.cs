@@ -7,5 +7,8 @@ public enum ResourceType
     Aluminum,
     Copper,
     Iron,
-    Izithrium
+    Izithrium,
+    NumTypes
 }
+
+//static const int NumResourceType = Enum.GetNames(typeof(ResourceType)).Length;

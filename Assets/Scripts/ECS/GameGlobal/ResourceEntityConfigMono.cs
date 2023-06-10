@@ -22,7 +22,7 @@ public class ResourceEntityConfigMonoBaker : Baker<ResourceEntityConfigMono>
                 resource1 = Entity.Null // DynamicArray???
             });
 
-            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+           // var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             var dynamicBuffer = AddBuffer<EntityElement>(resourceControllerEntity);
 
             for (int i = 0; i < authoring.resourcePrefab.Length; i++)

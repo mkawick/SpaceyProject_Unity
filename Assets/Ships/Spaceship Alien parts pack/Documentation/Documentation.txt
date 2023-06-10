@@ -1,0 +1,40 @@
+
+Spaceship Alien Parts Pack:
+
+Thank you for buying this asset, below you will find all the information about the content.
+
+This Asset include:
+
+Demo Scene, Documentation
+
+Spaceship Meshes Include:
+
+polygon count: 50 to 300 tris.
+
+3-Main Body
+2-Cannon
+1-Laser
+2-Wings
+1-Miniwing
+1-Radar
+1-Engine
+30-Spaceship Prefabs
+5-PBR Materials
+7-png Textures Res:2048 (5 Albedo textures, 1 normal map, 1 metallic)
+1-PSD Res:2048 (easy edit)
+
+Alien Meshes Include:
+
+polygon count: 30 to 450 tris.
+
+2-Main Body
+3-Guns
+1-Tentacle
+1-Leg
+1-Wing
+2-Eyes
+20-Alien Prefabs
+5-PBR Materials
+7-png Textures Res:2048 (5 Albedo textures, 1 normal map, 1 metallic)
+
+

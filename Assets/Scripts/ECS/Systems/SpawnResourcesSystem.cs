@@ -9,7 +9,7 @@ using Unity.Physics;
 //[BurstCompile]
 public partial class SpawnResourcesSystem : SystemBase
 {
-    float currentTime = 0;
+    //float currentTime = 0;
  //   [BurstCompile]    
     protected override void OnCreate()
     {

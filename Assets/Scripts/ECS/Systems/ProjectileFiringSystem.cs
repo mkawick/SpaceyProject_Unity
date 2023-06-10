@@ -7,7 +7,7 @@ using Unity.Transforms;
 [RequireMatchingQueriesForUpdate]
 public partial class ProjectileFiringSystem : SystemBase
 {
-    float currentTime = 0;
+   // float currentTime = 0;
     protected override void OnCreate()
     {
     }
